@@ -47,7 +47,7 @@ target_include_directories(realtime_tools PUBLIC
   $<INSTALL_INTERFACE:include/realtime_tools>
 )
 ament_target_dependencies(realtime_tools PUBLIC ${THIS_PACKAGE_INCLUDE_DEPENDS})
-if(UNIX)
+if(UNIX AND NOT APPLE)
   target_link_libraries(realtime_tools PUBLIC cap)
 endif()
 
@@ -61,7 +61,7 @@ target_include_directories(thread_priority PUBLIC
   $<INSTALL_INTERFACE:include/realtime_tools>
 )
 ament_target_dependencies(thread_priority PUBLIC ${THIS_PACKAGE_INCLUDE_DEPENDS})
-if(UNIX)
+if(UNIX AND NOT APPLE)
   target_link_libraries(thread_priority PUBLIC cap)
 endif()
 

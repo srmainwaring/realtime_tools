@@ -30,14 +30,19 @@
 
 #ifdef _WIN32
 #include <windows.h>
+
+#ifdef __APPLE__
+// no equivalent
+// #include <sys/capability.h>
 #else
-#include <sched.h>
 #include <sys/capability.h>
+#endif // __APPLE__
+
+#include <sched.h>
 #include <sys/mman.h>
-#include <sys/utsname.h>
 
 #include <unistd.h>
-#endif
+#endif  // _WIN32
 
 #include <cstring>
 #include <fstream>
@@ -49,6 +54,9 @@ bool has_realtime_kernel()
 {
 #ifdef _WIN32
   std::cerr << "Realtime kernel detection is not supported on Windows." << std::endl;
+  return false;
+#elif __APPLE__
+  std::cerr << "Realtime kernel detection is not supported on macOS." << std::endl;
   return false;
 #else
   std::ifstream realtime_file("/sys/kernel/realtime", std::ios::in);
@@ -75,6 +83,8 @@ bool configure_sched_fifo(int priority)
 #ifdef _WIN32
   HANDLE thread = GetCurrentThread();
   return SetThreadPriority(thread, priority);
+#elif __APPLE__
+  return false;
 #else
   struct sched_param schedp;
   memset(&schedp, 0, sizeof(schedp));
@@ -93,7 +103,11 @@ bool lock_memory(std::string & message)
 std::pair<bool, std::string> lock_memory()
 {
 #ifdef _WIN32
-  return {false, "Memory locking is not supported on Windows."};
+  std::string message = "Memory locking is not supported on Windows.";
+  return {false, message};
+#elif __APPLE__
+  std::string message = "Memory locking is not supported on macOS.";
+  return {false, message};
 #else
   auto is_capable = [](cap_value_t v) -> bool {
     bool rc = false;
@@ -145,6 +159,8 @@ std::pair<bool, std::string> set_thread_affinity(
   std::string message;
 #ifdef _WIN32
   message = "Thread affinity is not supported on Windows.";
+  return std::make_pair(false, message);
+#elif __APPLE__
   return std::make_pair(false, message);
 #else
   auto set_affinity_result_message = [](int result, std::string & msg) -> bool {
@@ -251,6 +267,8 @@ int64_t get_number_of_available_processors()
   SYSTEM_INFO sysinfo;
   GetSystemInfo(&sysinfo);
   return static_cast<int64_t>(sysinfo.dwNumberOfProcessors);
+#elif __APPLE__
+  return 1;
 #else
   return sysconf(_SC_NPROCESSORS_ONLN);
 #endif

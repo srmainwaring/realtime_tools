@@ -30,11 +30,14 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#ifdef __APPLE__
+// no equivalent
+// #include <sys/capability.h>
 #else
-#include <sched.h>
 #include <sys/capability.h>
+#endif
+#include <sched.h>
 #include <sys/mman.h>
-
 #include <unistd.h>
 #endif
 
@@ -58,6 +61,8 @@ bool configure_sched_fifo(int priority)
 #ifdef _WIN32
   HANDLE thread = GetCurrentThread();
   return SetThreadPriority(thread, priority);
+#elif __APPLE__
+  return false;
 #else
   struct sched_param schedp;
   memset(&schedp, 0, sizeof(schedp));
@@ -70,6 +75,8 @@ bool lock_memory(std::string & message)
 {
 #ifdef _WIN32
   message = "Memory locking is not supported on Windows.";
+  return false;
+#elif __APPLE__
   return false;
 #else
   auto is_capable = [](cap_value_t v) -> bool {
@@ -120,6 +127,8 @@ std::pair<bool, std::string> set_thread_affinity(pthread_t thread, int core)
   std::string message;
 #ifdef _WIN32
   message = "Thread affinity is not supported on Windows.";
+  return std::make_pair(false, message);
+#elif __APPLE__
   return std::make_pair(false, message);
 #else
   auto set_affinity_result_message = [](int result, std::string & msg) -> bool {
@@ -199,6 +208,8 @@ int64_t get_number_of_available_processors()
   SYSTEM_INFO sysinfo;
   GetSystemInfo(&sysinfo);
   return static_cast<int64_t>(sysinfo.dwNumberOfProcessors);
+#elif __APPLE__
+  return 1;
 #else
   return sysconf(_SC_NPROCESSORS_ONLN);
 #endif
